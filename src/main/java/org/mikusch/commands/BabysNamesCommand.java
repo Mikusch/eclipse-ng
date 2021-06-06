@@ -23,7 +23,7 @@ public class BabysNamesCommand implements EclipseCommand {
     private static final Logger LOG = LoggerFactory.getLogger(BabysNamesCommand.class);
     private static final long BABYSNAMES_ACCOUNT_ID = 1592227514;
 
-    private final Set<String> names = Collections.synchronizedSet(new HashSet<>());
+    private final List<String> names = Collections.synchronizedList(new ArrayList<>());
 
     @Autowired
     public BabysNamesCommand(TwitterService twitterService) {
@@ -55,11 +55,15 @@ public class BabysNamesCommand implements EclipseCommand {
         var guild = Objects.requireNonNull(event.getGuild());
         var member = Objects.requireNonNull(event.getMember());
 
-        String name = names.stream().skip(new Random().nextInt(names.size())).findAny().orElseThrow();
-        if (PermissionUtil.canInteract(guild.getSelfMember(), member)) {
-            member.modifyNickname(name).queue(modified -> event.getHook().editOriginal(MessageFormat.format("Your new nickname is **{0}**.", name)).queue());
+        if (!names.isEmpty()) {
+            String name = names.get(new Random().nextInt(names.size()));
+            if (PermissionUtil.canInteract(guild.getSelfMember(), member)) {
+                member.modifyNickname(name).queue(modified -> event.getHook().editOriginal(MessageFormat.format("Your new nickname is **{0}**.", name)).queue());
+            } else {
+                event.getHook().editOriginal(MessageFormat.format("I was unable to set your nickname to **{0}**.", name)).queue();
+            }
         } else {
-            event.getHook().editOriginal(MessageFormat.format("I was unable to set your nickname to **{0}**.", name)).queue();
+            event.getHook().editOriginal("This command is not ready yet. Please try again later.").queue();
         }
     }
 }
