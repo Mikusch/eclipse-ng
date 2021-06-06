@@ -5,6 +5,8 @@ import net.dv8tion.jda.api.JDABuilder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import twitter4j.Twitter;
+import twitter4j.TwitterFactory;
 
 import javax.security.auth.login.LoginException;
 
@@ -18,5 +20,10 @@ public class Eclipse {
     @Bean(name = "jda")
     public JDA getJda() throws LoginException, InterruptedException {
         return JDABuilder.createDefault("<BOT TOKEN>").build().awaitReady();
+    }
+
+    @Bean(name = "twitter")
+    public Twitter getTwitter() {
+        return new TwitterFactory().getInstance();
     }
 }

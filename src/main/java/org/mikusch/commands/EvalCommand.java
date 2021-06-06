@@ -4,6 +4,7 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege;
@@ -11,8 +12,6 @@ import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 public class EvalCommand implements EclipseCommand, PostCommandAddAction {
@@ -32,7 +31,10 @@ public class EvalCommand implements EclipseCommand, PostCommandAddAction {
 
         Object result = null;
         try {
-            result = shell.evaluate(Objects.requireNonNull(event.getOption("code")).getAsString());
+            OptionMapping code = event.getOption("code");
+            if (code != null) {
+                result = shell.evaluate(code.getAsString());
+            }
         } catch (Exception e) {
             result = e.toString();
         } finally {
