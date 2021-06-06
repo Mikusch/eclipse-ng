@@ -46,6 +46,6 @@ public class CommandListener extends ListenerAdapter {
         commands.stream()
                 .filter(command -> command.getCommandData().getName().equals(event.getName()))
                 .findFirst()
-                .ifPresentOrElse(command -> command.onSlashCommand(event), () -> LOG.error("Unknown command: {}", event.getName()));
+                .ifPresentOrElse(command -> event.deferReply().queue(x -> command.onSlashCommand(event)), () -> LOG.error("Unknown command: {}", event.getName()));
     }
 }

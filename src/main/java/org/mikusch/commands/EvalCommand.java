@@ -1,7 +1,6 @@
 package org.mikusch.commands;
 
 import groovy.lang.Binding;
-import groovy.lang.GroovyRuntimeException;
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
@@ -34,10 +33,11 @@ public class EvalCommand implements EclipseCommand, PostCommandAddAction {
         Object result = null;
         try {
             result = shell.evaluate(Objects.requireNonNull(event.getOption("code")).getAsString());
-        } catch (GroovyRuntimeException e) {
-            result = e.getMessageWithoutLocationText();
+        } catch (Exception e) {
+            result = e.toString();
         } finally {
-            event.reply(MarkdownUtil.codeblock(StringUtils.abbreviate(String.valueOf(result), 1993))).queue();
+            //Max. 2000 characters with room for markdown
+            event.getHook().editOriginal(MarkdownUtil.codeblock(StringUtils.abbreviate(String.valueOf(result), 1990))).queue();
         }
     }
 

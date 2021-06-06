@@ -15,6 +15,8 @@ public class PingCommand implements EclipseCommand {
 
     @Override
     public void onSlashCommand(@NotNull SlashCommandEvent event) {
-        event.getJDA().getRestPing().queue(ping -> event.reply("\uD83C\uDFD3 Ping: ``" + ping + " ms`` | Websocket: ``" + event.getJDA().getGatewayPing() + " ms``").queue());
+        event.getJDA().getRestPing().queue(ping -> {
+            event.getHook().editOriginal("\uD83C\uDFD3 Ping: ``" + ping + " ms`` | Websocket: ``" + event.getJDA().getGatewayPing() + " ms``").queue();
+        });
     }
 }

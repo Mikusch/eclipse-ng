@@ -38,7 +38,7 @@ public class AboutCommand implements EclipseCommand {
                     .setTimestamp(info.getTimeCreated())
                     .build();
 
-            event.replyEmbeds(embed).queue();
+            event.getHook().editOriginalEmbeds(embed).queue();
         });
     }
 }
