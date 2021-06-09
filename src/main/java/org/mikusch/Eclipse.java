@@ -2,6 +2,7 @@ package org.mikusch;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +19,8 @@ public class Eclipse {
     }
 
     @Bean(name = "jda")
-    public JDA getJda() throws LoginException, InterruptedException {
-        return JDABuilder.createDefault("<BOT TOKEN>").build().awaitReady();
+    public JDA getJDA(@Value("${eclipse.discord.token}") String token) throws LoginException, InterruptedException {
+        return JDABuilder.createDefault(token).build().awaitReady();
     }
 
     @Bean(name = "twitter")
