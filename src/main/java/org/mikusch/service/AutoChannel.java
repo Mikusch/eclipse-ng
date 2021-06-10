@@ -89,7 +89,7 @@ public class AutoChannel extends ListenerAdapter {
                 .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), Map::putAll);
 
         int index = this.getActiveAutoChannelsForGuild(vc.getGuild()).collect(Collectors.toList()).indexOf(vc);
-        StringBuilder sb = new StringBuilder(String.format("#%d ", index + 1));
+        var sb = new StringBuilder(String.format("#%d ", index + 1));
         if (activities.isEmpty()) {
             // One activity ex. "Team Fortress 2" or no activity ex. "General"
             sb.append("[").append(this.getDefaultChannelName(vc.getGuild()).orElse("General")).append("]");
@@ -142,8 +142,7 @@ public class AutoChannel extends ListenerAdapter {
     @Override
     public void onPermissionOverrideUpdate(@Nonnull PermissionOverrideUpdateEvent event) {
         if (event.getChannelType() == ChannelType.VOICE && event.getVoiceChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
-            this.getActiveAutoChannelsForGuild(event.getGuild()).forEach(vc ->
-            {
+            this.getActiveAutoChannelsForGuild(event.getGuild()).forEach(vc -> {
                 vc.getManager()
                         .sync(event.getChannel())
                         .putPermissionOverride(event.getGuild().getMemberById(channelAuthors.get(vc.getIdLong())), CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
@@ -177,16 +176,17 @@ public class AutoChannel extends ListenerAdapter {
 
     public void createAutoChannel(Member author) {
         VoiceChannel rootChannel = this.getRootAutoChannel(author.getGuild());
-        rootChannel.createCopy()
-                .setPosition(rootChannel.getPositionRaw())
-                .addPermissionOverride(author, CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
-                .reason("New auto-channel created by " + author.getUser().getAsTag())
-                .queue(vc ->
-                {
-                    activeChannels.put(vc.getGuild().getIdLong(), vc.getIdLong());
-                    channelAuthors.put(vc.getIdLong(), author.getIdLong());
-                    vc.getGuild().moveVoiceMember(author, vc).queue();
-                });
+        if (rootChannel != null) {
+            rootChannel.createCopy()
+                    .setPosition(rootChannel.getPositionRaw())
+                    .addPermissionOverride(author, CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
+                    .reason("New auto-channel created by " + author.getUser().getAsTag())
+                    .queue(vc -> {
+                        activeChannels.put(vc.getGuild().getIdLong(), vc.getIdLong());
+                        channelAuthors.put(vc.getIdLong(), author.getIdLong());
+                        vc.getGuild().moveVoiceMember(author, vc).queue();
+                    });
+        }
     }
 
     @Override
@@ -219,26 +219,29 @@ public class AutoChannel extends ListenerAdapter {
     }
 
     private void onMemberLeaveAutoChannel(VoiceChannel vc, Member member) {
-        if (vc.getMembers().isEmpty())  // all members left the channel
-        {
-            vc.delete().reason("Every member has left the auto-channel").queue(deleted ->
-            {
+        // all members left the channel
+        if (vc.getMembers().isEmpty()) {
+            vc.delete().reason("Every member has left the auto-channel").queue(deleted -> {
                 this.getActiveAutoChannelsForGuild(vc.getGuild())   // fetch other auto channels to update
                         .filter(v -> v.getIdLong() != vc.getIdLong())   // don't update the channel we just deleted
                         .filter(v -> !customRenamedChannels.contains(v.getIdLong()))    // don't update custom renamed channels
                         .forEach(v -> v.getManager().setName(this.createChannelNameFromConnectedMembers(v)).queue());   // update them!
             });
         } else {
+            // check if the channel owner left the channel
             Long currentOwner = channelAuthors.get(vc.getIdLong());
-            if (currentOwner != null && currentOwner == member.getIdLong())  // the channel owner left the channel
-            {
+            if (currentOwner != null && currentOwner == member.getIdLong()) {
                 // determine new channel owner
-                vc.getMembers().stream().findFirst().ifPresent(newOwner ->
-                {
-                    vc.upsertPermissionOverride(member).reset().queue();   // remove old owner's permissions
+                vc.getMembers().stream().findFirst().ifPresent(newOwner -> {
+                    // remove old owner's permissions
+                    var override = vc.getPermissionOverride(member);
+                    if (override != null) {
+                        override.delete().queue();
+                    }
+                    // add new owner's permissions
                     vc.upsertPermissionOverride(newOwner)
                             .setAllow(CHANNEL_AUTHOR_PERMISSIONS_ALLOW)
-                            .setDeny(CHANNEL_AUTHOR_PERMISSIONS_DENY)  // add new owner's permissions
+                            .setDeny(CHANNEL_AUTHOR_PERMISSIONS_DENY)
                             .reason("Channel owner " + member.getUser().getAsTag() + " has left their channel, designating " + newOwner.getUser().getAsTag() + " as the new owner")
                             .queue(changed -> channelAuthors.replace(vc.getIdLong(), newOwner.getIdLong()), e -> channelAuthors.remove(vc.getIdLong()));
                 });
