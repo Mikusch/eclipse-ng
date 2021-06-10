@@ -1,4 +1,4 @@
-package org.mikusch.util;
+package org.mikusch.service;
 
 import twitter4j.Status;
 import twitter4j.TwitterException;

@@ -1,4 +1,4 @@
-package org.mikusch.commands;
+package org.mikusch.service;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
