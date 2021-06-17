@@ -30,7 +30,7 @@ public class BabysNamesCommandListener extends ListenerAdapter {
     @Autowired
     public BabysNamesCommandListener(JDA jda, TwitterService twitterService) {
         jda.addEventListener(this);
-        jda.getGuildById(186809082470989824L).upsertCommand(new CommandData("babyname", "Gives you a good old baby name!")).queue();
+        jda.upsertCommand(new CommandData("babyname", "Gives you a good old baby name!")).queue();
 
         //Periodically fetch all baby names from the @Babysnames twitter
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {

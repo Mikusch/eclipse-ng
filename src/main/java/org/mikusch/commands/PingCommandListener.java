@@ -14,7 +14,7 @@ public class PingCommandListener extends ListenerAdapter {
     @Autowired
     public PingCommandListener(JDA jda) {
         jda.addEventListener(this);
-        jda.getGuildById(186809082470989824L).upsertCommand(new CommandData("ping", "Shows the ping")).queue();
+        jda.upsertCommand(new CommandData("ping", "Shows the ping")).queue();
     }
 
     @Override

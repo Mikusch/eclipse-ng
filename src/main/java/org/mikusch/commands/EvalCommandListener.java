@@ -21,7 +21,7 @@ public class EvalCommandListener extends ListenerAdapter {
     @Autowired
     public EvalCommandListener(JDA jda) {
         jda.addEventListener(this);
-        jda.getGuildById(186809082470989824L).upsertCommand(new CommandData("eval", "Evaluates code")
+        jda.upsertCommand(new CommandData("eval", "Evaluates code")
                 .setDefaultEnabled(false)
                 .addOption(OptionType.STRING, "code", "The code to evaluate", true))
                 .queue(command -> {

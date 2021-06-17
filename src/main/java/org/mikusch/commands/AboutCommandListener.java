@@ -24,7 +24,7 @@ public class AboutCommandListener extends ListenerAdapter {
     @Autowired
     public AboutCommandListener(JDA jda) {
         jda.addEventListener(this);
-        jda.getGuildById(186809082470989824L).upsertCommand(new CommandData("about", "Tells you more about the bot")).queue();
+        jda.upsertCommand(new CommandData("about", "Tells you more about the bot")).queue();
     }
 
     @Override
