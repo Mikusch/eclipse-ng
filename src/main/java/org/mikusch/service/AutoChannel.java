@@ -103,14 +103,21 @@ public class AutoChannel extends ListenerAdapter {
 
     @Nullable
     public VoiceChannel getRootAutoChannel(Guild guild) {
-        var list = jdbcTemplate.queryForList("SELECT `root_channel_id` FROM `autochannels` WHERE `guild_id` = ?", guild.getIdLong());
-        return list.stream().findFirst().map(map -> (long) map.get("root_channel_id")).map(guild::getVoiceChannelById).orElse(null);
+        return jdbcTemplate.queryForObject(
+                "SELECT `root_channel_id` FROM `autochannels` WHERE `guild_id` = ?",
+                (rs, rowNum) -> guild.getVoiceChannelById(rs.getLong("root_channel_id")),
+                guild.getIdLong()
+        );
     }
 
     @Nonnull
     public Optional<String> getDefaultChannelName(Guild guild) {
-        var list = jdbcTemplate.queryForList("SELECT `default_name` FROM `autochannels` WHERE `guild_id` = ?", guild.getIdLong());
-        return list.stream().findFirst().map(map -> (String) map.get("default_name"));
+        var name = jdbcTemplate.queryForObject(
+                "SELECT `default_name` FROM `autochannels` WHERE `guild_id` = ?",
+                (rs, rowNum) -> rs.getString("default_name"),
+                guild.getIdLong()
+        );
+        return Optional.ofNullable(name);
     }
 
     @Override

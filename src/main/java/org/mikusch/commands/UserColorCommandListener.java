@@ -16,12 +16,12 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
-import java.util.Objects;
 import java.util.Optional;
 
 import static net.dv8tion.jda.api.utils.MarkdownUtil.monospace;
@@ -67,11 +67,15 @@ public class UserColorCommandListener extends ListenerAdapter {
 
     @Override
     public void onUserUpdateName(@Nonnull UserUpdateNameEvent event) {
-        var list = jdbcTemplate.queryForList("SELECT `role_id` FROM `usercolors` WHERE `user_id` = ?", event.getUser().getIdLong());
-        list.stream()
-                .map(map -> event.getJDA().getRoleById((long) map.get("role_id")))
-                .filter(Objects::nonNull)
-                .forEach(role -> role.getManager().setName(event.getNewName()).reason("User changed name").queue());
+        jdbcTemplate.query("SELECT `role_id` FROM `usercolors` WHERE `user_id` = ?",
+                rs -> {
+                    var role = event.getJDA().getRoleById(rs.getLong("role_id"));
+                    if (role != null) {
+                        role.getManager().setName(event.getNewName()).reason("User changed name").queue();
+                    }
+                },
+                event.getUser().getIdLong()
+        );
     }
 
     /**
@@ -123,8 +127,16 @@ public class UserColorCommandListener extends ListenerAdapter {
     }
 
     private Optional<Role> getRoleForMember(Member member) {
-        var list = jdbcTemplate.queryForList("SELECT `role_id` FROM `usercolors` WHERE `guild_id` = ? AND `user_id` = ?", member.getGuild().getIdLong(), member.getIdLong());
-        return list.stream().map(map -> member.getGuild().getRoleById((long) map.get("role_id"))).findFirst();
+        try {
+            var role = jdbcTemplate.queryForObject(
+                    "SELECT `role_id` FROM `usercolors` WHERE `guild_id` = ? AND `user_id` = ?",
+                    (rs, rowNum) -> member.getGuild().getRoleById(rs.getLong("role_id")),
+                    member.getGuild().getIdLong(), member.getIdLong()
+            );
+            return Optional.ofNullable(role);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 
     private void createRole(InteractionHook hook, Member member, Color color) {
@@ -139,7 +151,7 @@ public class UserColorCommandListener extends ListenerAdapter {
                     .queue(role -> {
                         jdbcTemplate.update("INSERT INTO `usercolors` (`user_id`, `guild_id`, `role_id`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `role_id` = ?", member.getIdLong(), guild.getIdLong(), role.getIdLong(), role.getIdLong());
                         guild.addRoleToMember(member, role).queue();
-                        guild.modifyRolePositions().selectPosition(role).moveTo(markerRole.getPosition()).queue();
+                        guild.modifyRolePositions().selectPosition(role).moveTo(markerRole.getPosition() - 1).queue();
                         hook.editOriginal("A new custom role (" + role.getAsMention() + ") with the color " + monospace(formatHex(color)) + " has been successfully created and assigned to you.").queue();
                     });
         }
