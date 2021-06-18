@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class DefaultThinkerService implements ThinkerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultThinkerService.class);
-    private static final Duration MIN_DURATION = Duration.ofMinutes(15);
+    private static final Duration MIN_DURATION = Duration.ofMinutes(30);
 
     private final ConcurrentHashMap<Long, OffsetDateTime> lastPostedTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
