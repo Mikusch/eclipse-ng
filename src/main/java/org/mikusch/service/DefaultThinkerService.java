@@ -40,7 +40,7 @@ public class DefaultThinkerService implements ThinkerService {
                     jda.retrieveWebhookById(sqlRowSet.getLong("webhook_id")).queue(webhook -> triggerThinker(guild, webhook));
                 }
             }
-        }, 0, 3, TimeUnit.SECONDS);
+        }, 0, 1, TimeUnit.MINUTES);
     }
 
     @Override
@@ -58,25 +58,35 @@ public class DefaultThinkerService implements ThinkerService {
 
     @Override
     public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild) {
-        return getThinker(guild).thenCompose(webhook -> triggerThinker(guild, webhook));
+        return triggerThinker(guild, false);
+    }
+
+    @Override
+    public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, boolean force) {
+        return getThinker(guild).thenCompose(webhook -> triggerThinker(guild, webhook, force));
     }
 
     @Override
     public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, Webhook webhook) {
+        return triggerThinker(guild, webhook, false);
+    }
+
+    @Override
+    public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, Webhook webhook, boolean force) {
         var channel = webhook.getChannel();
         var lastPostedTime = lastPostedTimes.computeIfAbsent(webhook.getIdLong(), webhookId -> OffsetDateTime.now());
 
         return channel.getHistory()
                 .retrievePast(100)
-                .map(messages -> messages.stream().map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
-                .map(timestamps -> {
+                .submit()
+                .thenApply(messages -> messages.stream().map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
+                .thenApply(timestamps -> {
                     //Calculate the average interval between messages sent in the current channel
                     double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElseThrow();
                     return Duration.ofMillis((long) avgMillis);
                 })
-                .submit()
                 .thenCompose(duration -> {
-                    if (lastPostedTime.plus(duration).isBefore(OffsetDateTime.now())) {
+                    if (force || lastPostedTime.plus(duration).isBefore(OffsetDateTime.now())) {
                         var client = WebhookClientBuilder.fromJDA(webhook).buildJDA();
                         return retrieveRandomMessage(guild).thenCompose(message -> client.send(message).whenComplete((readonlyMessage, throwable) -> {
                             //If there was no error, remember the time we sent the message
@@ -90,7 +100,7 @@ public class DefaultThinkerService implements ThinkerService {
                             client.close();
                         }));
                     } else {
-                        LOGGER.debug("Thinker for {} will trigger at {}", guild, lastPostedTime.plus(duration));
+                        LOGGER.info("Thinker for {} will trigger at {}", guild, lastPostedTime.plus(duration));
                         return CompletableFuture.completedFuture(null);
                     }
                 });

@@ -49,6 +49,8 @@ public class UserColorCommandListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommand(@NotNull SlashCommandEvent event) {
+        if (!event.getName().equals("usercolor")) return;
+
         event.deferReply().queue(hook -> {
             OptionMapping optionColor = event.getOption("color");
             if (optionColor == null) {

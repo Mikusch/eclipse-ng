@@ -15,7 +15,11 @@ public interface ThinkerService {
 
     CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild);
 
+    CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, boolean force);
+
     CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, Webhook webhook);
+
+    CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, Webhook webhook, boolean force);
 
     CompletableFuture<Message> retrieveRandomMessage(Guild guild);
 
