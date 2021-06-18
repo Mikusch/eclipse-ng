@@ -79,7 +79,7 @@ public class DefaultThinkerService implements ThinkerService {
         return channel.getHistory()
                 .retrievePast(100)
                 .submit()
-                .thenApply(messages -> messages.stream().map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
+                .thenApply(messages -> messages.stream().filter(this::isValidMessage).map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
                 .thenApply(timestamps -> {
                     //Calculate the average interval between messages sent in the current channel
                     double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElseThrow();
@@ -116,11 +116,26 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     @Override
+    public boolean isValidMessage(Message message) {
+        return !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
+    }
+
+    @Override
     public void saveMessage(Message message) {
         jdbcTemplate.update(
-                "INSERT INTO `thoughts` (`guild_id`, `channel_id`, `user_id`, `message_id`) VALUES (?, ?, ?, ?)",
+                "INSERT INTO `thoughts` (`guild_id`, `channel_id`, `user_id`, `message_id`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `guild_id` = `guild_id`",
                 message.getGuild().getIdLong(), message.getChannel().getIdLong(), message.getAuthor().getIdLong(), message.getIdLong()
         );
+    }
+
+    @Override
+    public void saveAllMessagesInChannel(MessageChannel channel) {
+        channel.getIterableHistory().forEachAsync(value -> {
+            if (isValidMessage(value)) {
+                saveMessage(value);
+            }
+            return true;
+        });
     }
 
     @Override
@@ -134,7 +149,7 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     @Override
-    public void deleteAllMessagesFromChannel(TextChannel channel) {
+    public void deleteAllMessagesFromChannel(MessageChannel channel) {
         jdbcTemplate.update("DELETE FROM `thoughts` WHERE `channel_id` = ?", channel.getIdLong());
     }
 }

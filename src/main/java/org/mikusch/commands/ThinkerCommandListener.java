@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
@@ -24,9 +25,11 @@ public class ThinkerCommandListener extends ListenerAdapter {
     public ThinkerCommandListener(ThinkerService thinkerService, JDA jda) {
         this.thinkerService = thinkerService;
         jda.addEventListener(this);
-        jda.getGuildById(517094597030314004L).upsertCommand(
+        jda.getGuildById(186809082470989824L).upsertCommand(
                 new CommandData("thinker", "The Thinker").addSubcommands(
-                        new SubcommandData("force", "Forces the Thinker to think")
+                        new SubcommandData("force", "Forces the Thinker to think"),
+                        new SubcommandData("scan", "Scans all messages in a channel and stores them in the database")
+                                .addOption(OptionType.CHANNEL, "channel", "The channel to scan in")
                 )
         ).queue();
     }
@@ -49,6 +52,24 @@ public class ThinkerCommandListener extends ListenerAdapter {
                     });
                 } else {
                     hook.editOriginal("You need the " + MarkdownUtil.bold(Permission.MANAGE_WEBHOOKS.getName()) + " permission in this server to use this command.").queue();
+                }
+            } else if (StringUtils.equals(event.getSubcommandName(), "scan")) {
+                if (member.hasPermission(Permission.MANAGE_WEBHOOKS)) {
+                    var channelOption = event.getOption("channel");
+                    if (channelOption != null) {
+                        var messageChannel = channelOption.getAsMessageChannel();
+                        if (messageChannel != null) {
+                            hook.setEphemeral(true).editOriginal("Scanning " + channelOption.getAsGuildChannel().getAsMention() + " for messages...").queue(message -> {
+                                thinkerService.saveAllMessagesInChannel(messageChannel);
+                            });
+                        } else {
+                            hook.editOriginal(channelOption.getAsGuildChannel().getAsMention() + " is not a message channel!").queue();
+                        }
+                    } else {
+                        hook.setEphemeral(true).editOriginal("Scanning this channel for messages...").queue(message -> {
+                            thinkerService.saveAllMessagesInChannel(event.getTextChannel());
+                        });
+                    }
                 }
             }
         });
