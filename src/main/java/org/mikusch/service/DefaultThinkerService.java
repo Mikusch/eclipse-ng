@@ -100,7 +100,7 @@ public class DefaultThinkerService implements ThinkerService {
                             client.close();
                         }));
                     } else {
-                        LOGGER.info("Thinker for {} will trigger at {}", guild, lastPostedTime.plus(duration));
+                        LOGGER.debug("Thinker for {} will trigger at {}", guild, lastPostedTime.plus(duration));
                         return CompletableFuture.completedFuture(null);
                     }
                 });
