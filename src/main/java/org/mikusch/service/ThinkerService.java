@@ -1,10 +1,7 @@
 package org.mikusch.service;
 
 import club.minnced.discord.webhook.receive.ReadonlyMessage;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.Webhook;
+import net.dv8tion.jda.api.entities.*;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +21,8 @@ public interface ThinkerService {
     CompletableFuture<Message> retrieveRandomMessage(Guild guild);
 
     boolean isValidMessage(Message message);
+
+    boolean isValidChannel(TextChannel channel);
 
     void saveMessage(Message message);
 

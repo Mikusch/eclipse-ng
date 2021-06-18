@@ -3,6 +3,7 @@ package org.mikusch.service;
 import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +118,13 @@ public class DefaultThinkerService implements ThinkerService {
 
     @Override
     public boolean isValidMessage(Message message) {
-        return !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
+        return isValidChannel(message.getTextChannel()) && !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
+    }
+
+    @Override
+    public boolean isValidChannel(TextChannel channel) {
+        var override = channel.getPermissionOverride(channel.getGuild().getPublicRole());
+        return override == null || !override.getDenied().contains(Permission.MESSAGE_READ);
     }
 
     @Override
