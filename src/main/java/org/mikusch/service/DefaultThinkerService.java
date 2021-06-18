@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 public class DefaultThinkerService implements ThinkerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultThinkerService.class);
+    private static final Duration MIN_DURATION = Duration.ofMinutes(15);
 
     private final ConcurrentHashMap<Long, OffsetDateTime> lastPostedTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -84,7 +85,7 @@ public class DefaultThinkerService implements ThinkerService {
                 .thenApply(timestamps -> {
                     //Calculate the average interval between messages sent in the current channel
                     double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElseThrow();
-                    return Duration.ofMillis((long) avgMillis);
+                    return avgMillis < MIN_DURATION.toMillis() ? MIN_DURATION : Duration.ofMillis((long) avgMillis);
                 })
                 .thenCompose(duration -> {
                     if (force || lastPostedTime.plus(duration).isBefore(OffsetDateTime.now())) {
