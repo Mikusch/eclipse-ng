@@ -25,7 +25,7 @@ public class ThinkerCommandListener extends ListenerAdapter {
     public ThinkerCommandListener(ThinkerService thinkerService, JDA jda) {
         this.thinkerService = thinkerService;
         jda.addEventListener(this);
-        jda.getGuildById(186809082470989824L).upsertCommand(
+        jda.upsertCommand(
                 new CommandData("thinker", "The Thinker").addSubcommands(
                         new SubcommandData("force", "Forces the Thinker to think"),
                         new SubcommandData("scan", "Scans all messages in a channel and stores them in the database")
