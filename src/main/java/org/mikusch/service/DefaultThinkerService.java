@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 public class DefaultThinkerService implements ThinkerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultThinkerService.class);
-    private static final Duration MIN_DURATION = Duration.ofMinutes(30);
 
     private final ConcurrentHashMap<Long, OffsetDateTime> lastPostedTimes = new ConcurrentHashMap<>();
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -64,8 +63,8 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     @Override
-    public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, boolean force) {
-        return getThinker(guild).thenCompose(webhook -> triggerThinker(guild, webhook, force));
+    public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, boolean immediate) {
+        return getThinker(guild).thenCompose(webhook -> triggerThinker(guild, webhook, immediate));
     }
 
     @Override
@@ -73,39 +72,46 @@ public class DefaultThinkerService implements ThinkerService {
         return triggerThinker(guild, webhook, false);
     }
 
-    @Override
-    public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, Webhook webhook, boolean force) {
-        var channel = webhook.getChannel();
-        var lastPostedTime = lastPostedTimes.computeIfAbsent(webhook.getIdLong(), webhookId -> OffsetDateTime.now());
+    public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, Webhook webhook, boolean immediate) {
+        if (immediate) {
+            return triggerThinkerImmediate(guild, webhook);
+        } else {
+            var channel = webhook.getChannel();
+            var lastPostedTime = lastPostedTimes.computeIfAbsent(webhook.getIdLong(), webhookId -> OffsetDateTime.now());
 
-        return channel.getHistory()
-                .retrievePast(100)
-                .submit()
-                .thenApply(messages -> messages.stream().filter(this::isValidMessage).map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
-                .thenApply(timestamps -> {
-                    //Calculate the average interval between messages sent in the current channel
-                    double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElseThrow();
-                    return avgMillis < MIN_DURATION.toMillis() ? MIN_DURATION : Duration.ofMillis((long) avgMillis);
-                })
-                .thenCompose(duration -> {
-                    if (force || lastPostedTime.plus(duration).isBefore(OffsetDateTime.now())) {
-                        var client = WebhookClientBuilder.fromJDA(webhook).buildJDA();
-                        return retrieveRandomMessage(guild).thenCompose(message -> client.send(message).whenComplete((readonlyMessage, throwable) -> {
-                            //If there was no error, remember the time we sent the message
-                            if (throwable == null) {
-                                lastPostedTimes.put(webhook.getIdLong(), OffsetDateTime.now());
-                            } else {
-                                LOGGER.error("Exception encountered while sending Thinker message", throwable);
-                            }
+            return channel.getHistory()
+                    .retrievePast(100)
+                    .submit()
+                    .thenApply(messages -> messages.stream().filter(this::isValidMessage).map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
+                    .thenApply(timestamps -> {
+                        //Calculate the average interval between messages sent in the current channel
+                        double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElse(0);
+                        return Duration.ofMillis((long) avgMillis);
+                    })
+                    .thenCompose(duration -> {
+                        if (lastPostedTime.plus(duration).isBefore(OffsetDateTime.now())) {
+                            return triggerThinkerImmediate(guild, webhook);
+                        } else {
+                            LOGGER.debug("The next Thinker for {} will be triggered around {}", guild, lastPostedTime.plus(duration));
+                            return CompletableFuture.completedFuture(null);
+                        }
+                    });
+        }
+    }
 
-                            //And finally, close the client
-                            client.close();
-                        }));
-                    } else {
-                        LOGGER.debug("Thinker for {} will trigger at {}", guild, lastPostedTime.plus(duration));
-                        return CompletableFuture.completedFuture(null);
-                    }
-                });
+    private CompletableFuture<ReadonlyMessage> triggerThinkerImmediate(Guild guild, Webhook webhook) {
+        var client = WebhookClientBuilder.fromJDA(webhook).buildJDA();
+        return retrieveRandomMessage(guild).thenCompose(message -> client.send(message).whenComplete((readonlyMessage, throwable) -> {
+            //If there was no error, remember the time we sent the message
+            if (throwable == null) {
+                lastPostedTimes.put(webhook.getIdLong(), OffsetDateTime.now());
+            } else {
+                LOGGER.error("Exception encountered while sending Thinker message", throwable);
+            }
+
+            //And finally, close the client
+            client.close();
+        }));
     }
 
     @Override

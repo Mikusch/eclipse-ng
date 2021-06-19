@@ -20,7 +20,7 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.0'
     testRuntimeOnly group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.7.0'
 
-    implementation group: 'net.dv8tion', name: 'JDA', version: '4.3.0_280'
+    implementation group: 'net.dv8tion', name: 'JDA', version: '4.3.0_281'
     implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.5.7'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-parent', version: '2.5.0'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.5.1'
