@@ -58,6 +58,15 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     @Override
+    public Double getFrequency(Guild guild) {
+        return jdbcTemplate.queryForObject(
+                "SELECT `frequency` FROM `thinkers` WHERE `guild_id` = ?",
+                (rs, rowNum) -> rs.getDouble("frequency"),
+                guild.getIdLong()
+        );
+    }
+
+    @Override
     public CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild) {
         return triggerThinker(guild, false);
     }
@@ -86,7 +95,7 @@ public class DefaultThinkerService implements ThinkerService {
                     .thenApply(timestamps -> {
                         //Calculate the average interval between messages sent in the current channel
                         double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElse(0);
-                        return Duration.ofMillis((long) avgMillis);
+                        return Duration.ofMillis((long) (avgMillis / getFrequency(guild)));
                     })
                     .thenCompose(duration -> {
                         if (lastPostedTime.plus(duration).isBefore(OffsetDateTime.now())) {

@@ -10,6 +10,8 @@ public interface ThinkerService {
 
     CompletableFuture<Webhook> getThinker(Guild guild);
 
+    Double getFrequency(Guild guild);
+
     CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild);
 
     CompletableFuture<ReadonlyMessage> triggerThinker(Guild guild, boolean immediate);
