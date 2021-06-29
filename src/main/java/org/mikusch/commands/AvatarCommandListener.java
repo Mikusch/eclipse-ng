@@ -45,6 +45,8 @@ public class AvatarCommandListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommand(@NotNull SlashCommandEvent event) {
+        if (!event.getName().equals("avatar")) return;
+
         OptionMapping option = event.getOption("user");
         User user = option != null ? option.getAsUser() : event.getUser();
 
