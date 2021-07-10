@@ -19,6 +19,7 @@ import net.dv8tion.jda.api.events.user.update.GenericUserPresenceEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -103,11 +104,15 @@ public class AutoChannel extends ListenerAdapter {
 
     @Nullable
     public VoiceChannel getRootAutoChannel(Guild guild) {
-        return jdbcTemplate.queryForObject(
-                "SELECT `root_channel_id` FROM `autochannels` WHERE `guild_id` = ?",
-                (rs, rowNum) -> guild.getVoiceChannelById(rs.getLong("root_channel_id")),
-                guild.getIdLong()
-        );
+        try {
+            return jdbcTemplate.queryForObject(
+                    "SELECT `root_channel_id` FROM `autochannels` WHERE `guild_id` = ?",
+                    (rs, rowNum) -> guild.getVoiceChannelById(rs.getLong("root_channel_id")),
+                    guild.getIdLong()
+            );
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 
     @Nonnull
