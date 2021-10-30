@@ -2,6 +2,7 @@ package org.mikusch;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,6 +11,7 @@ import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
 import javax.security.auth.login.LoginException;
+import java.util.EnumSet;
 
 @SpringBootApplication
 public class Eclipse {
@@ -20,7 +22,7 @@ public class Eclipse {
 
     @Bean(name = "jda")
     public JDA getJDA(@Value("${eclipse.discord.token}") String token) throws LoginException, InterruptedException {
-        return JDABuilder.createDefault(token).build().awaitReady();
+        return JDABuilder.create(token, EnumSet.allOf(GatewayIntent.class)).build().awaitReady();
     }
 
     @Bean(name = "twitter")
