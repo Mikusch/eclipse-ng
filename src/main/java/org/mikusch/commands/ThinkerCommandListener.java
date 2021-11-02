@@ -41,8 +41,8 @@ public class ThinkerCommandListener extends ListenerAdapter {
         var member = Objects.requireNonNull(event.getMember());
 
         event.deferReply().queue(hook -> {
-            if (StringUtils.equals(event.getSubcommandName(), "force")) {
-                if (member.hasPermission(Permission.MANAGE_WEBHOOKS)) {
+            if (member.hasPermission(Permission.MANAGE_WEBHOOKS)) {
+                if (StringUtils.equals(event.getSubcommandName(), "force")) {
                     thinkerService.triggerThinker(event.getGuild(), true).thenAccept(readonlyMessage -> {
                         if (readonlyMessage.getChannelId() == event.getChannel().getIdLong()) {
                             hook.deleteOriginal().queue();
@@ -50,11 +50,7 @@ public class ThinkerCommandListener extends ListenerAdapter {
                             hook.editOriginal("The Thinker has spoken in " + event.getGuild().getTextChannelById(readonlyMessage.getChannelId()).getAsMention() + ".").queue();
                         }
                     });
-                } else {
-                    hook.editOriginal("You need the " + MarkdownUtil.bold(Permission.MANAGE_WEBHOOKS.getName()) + " permission in this server to use this command.").queue();
-                }
-            } else if (StringUtils.equals(event.getSubcommandName(), "scan")) {
-                if (member.hasPermission(Permission.MANAGE_WEBHOOKS)) {
+                } else if (StringUtils.equals(event.getSubcommandName(), "scan")) {
                     var channelOption = event.getOption("channel");
                     if (channelOption != null) {
                         var messageChannel = channelOption.getAsMessageChannel();
@@ -71,6 +67,8 @@ public class ThinkerCommandListener extends ListenerAdapter {
                         });
                     }
                 }
+            } else {
+                hook.editOriginal("You need the " + MarkdownUtil.bold(Permission.MANAGE_WEBHOOKS.getName()) + " permission in this server to use this command.").queue();
             }
         });
     }
