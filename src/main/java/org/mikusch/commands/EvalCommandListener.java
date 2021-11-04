@@ -3,6 +3,7 @@ package org.mikusch.commands;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
@@ -15,21 +16,29 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class EvalCommandListener extends ListenerAdapter {
+
+    private static final List<Long> ENABLED_GUILDS = List.of(186809082470989824L, 517094597030314004L);
+    private static final CommandPrivilege PRIVILEGE = new CommandPrivilege(CommandPrivilege.Type.USER, true, 177414298698645504L);
 
     @Autowired
     public EvalCommandListener(JDA jda) {
         jda.addEventListener(this);
         jda.upsertCommand(new CommandData("eval", "Evaluates code")
-                .setDefaultEnabled(false)
-                .addOption(OptionType.STRING, "code", "The code to evaluate", true))
+                        .setDefaultEnabled(false)
+                        .addOption(OptionType.STRING, "code", "The code to evaluate", true))
                 .queue(command -> {
-                    //Only Mikusch may access this
-                    var guild = jda.getGuildById(186809082470989824L);
-                    if (guild != null) {
-                        guild.updateCommandPrivilegesById(command.getIdLong(), new CommandPrivilege(CommandPrivilege.Type.USER, true, 177414298698645504L)).queue();
-                    }
+                    ENABLED_GUILDS.forEach(id -> {
+                        Guild guild = jda.getGuildById(id);
+                        if (guild != null) {
+                            //Only Mikusch may access this
+                            command.updatePrivileges(guild, PRIVILEGE).queue();
+                            command.updatePrivileges(guild, PRIVILEGE).queue();
+                        }
+                    });
                 });
     }
 
