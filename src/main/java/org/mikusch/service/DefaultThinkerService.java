@@ -138,9 +138,9 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     @Override
-    public boolean isValidChannel(TextChannel channel) {
+    public boolean isValidChannel(IPermissionContainer channel) {
         var override = channel.getPermissionOverride(channel.getGuild().getPublicRole());
-        return override == null || !override.getDenied().contains(Permission.MESSAGE_READ);
+        return override == null || !override.getDenied().contains(Permission.VIEW_CHANNEL);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     @Override
-    public void deleteAllMessagesFromChannel(MessageChannel channel) {
+    public void deleteAllMessagesFromChannel(Channel channel) {
         jdbcTemplate.update("DELETE FROM `thoughts` WHERE `channel_id` = ?", channel.getIdLong());
     }
 }

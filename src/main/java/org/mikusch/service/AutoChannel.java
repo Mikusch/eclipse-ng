@@ -6,11 +6,11 @@ import com.google.common.collect.Multimaps;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.events.channel.voice.VoiceChannelDeleteEvent;
-import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdateBitrateEvent;
-import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdateNameEvent;
-import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdateParentEvent;
-import net.dv8tion.jda.api.events.channel.voice.update.VoiceChannelUpdateUserLimitEvent;
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateBitrateEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateNameEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateParentEvent;
+import net.dv8tion.jda.api.events.channel.update.ChannelUpdateUserLimitEvent;
 import net.dv8tion.jda.api.events.guild.override.PermissionOverrideUpdateEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
@@ -53,34 +53,36 @@ public class AutoChannel extends ListenerAdapter {
     }
 
     @Override
-    public void onVoiceChannelDelete(@Nonnull VoiceChannelDeleteEvent event) {
-        var guild = event.getGuild();
-        var vc = event.getChannel();
-        if (activeChannels.containsValue(vc.getIdLong())) {
-            // an auto channel was deleted, remove it from our maps
-            activeChannels.remove(guild.getIdLong(), vc.getIdLong());
-            channelAuthors.remove(vc.getIdLong());
-            customRenamedChannels.remove(vc.getIdLong());
-            this.getActiveAutoChannelsForGuild(event.getGuild())
-                    .filter(v -> !customRenamedChannels.contains(v.getIdLong()))
-                    .forEach(v -> v.getManager().setName(this.createChannelNameFromConnectedMembers(v)).queue());
-        } else if (vc.equals(this.getRootAutoChannel(event.getGuild()))) {
-            // the root channel was deleted, delete all auto channels (this should happen very rarely)
-            // this will trigger the other if-branch above
-            activeChannels.get(guild.getIdLong()).forEach(id -> event.getJDA().getVoiceChannelById(id).delete().queue());
+    public void onChannelDelete(@Nonnull ChannelDeleteEvent event) {
+        if (event.isFromType(ChannelType.VOICE)) {
+            Guild guild = event.getGuild();
+            Channel channel = event.getChannel();
+            if (activeChannels.containsValue(channel.getIdLong())) {
+                // An auto channel was deleted, remove it from our maps
+                activeChannels.remove(guild.getIdLong(), channel.getIdLong());
+                channelAuthors.remove(channel.getIdLong());
+                customRenamedChannels.remove(channel.getIdLong());
+                this.getActiveAutoChannelsForGuild(event.getGuild())
+                        .filter(vc -> !customRenamedChannels.contains(vc.getIdLong()))
+                        .forEach(vc -> vc.getManager().setName(this.createChannelNameFromConnectedMembers(vc)).queue());
+            } else if (channel.equals(this.getRootAutoChannel(event.getGuild()))) {
+                // The root channel was deleted, delete all auto channels (this should happen very rarely)
+                // This will trigger the other if-branch above
+                activeChannels.get(guild.getIdLong()).forEach(id -> event.getJDA().getVoiceChannelById(id).delete().queue());
+            }
         }
     }
 
     @Nonnull
     @CheckReturnValue
-    public Stream<VoiceChannel> getActiveAutoChannelsForGuild(Guild guild) {
+    public Stream<AudioChannel> getActiveAutoChannelsForGuild(Guild guild) {
         return activeChannels.get(guild.getIdLong()).stream().map(guild::getVoiceChannelById);
     }
 
     @Nonnull
-    public String createChannelNameFromConnectedMembers(VoiceChannel vc) {
+    public String createChannelNameFromConnectedMembers(AudioChannel channel) {
         // Map<Activity Name, Count>
-        Map<String, Long> activities = vc.getMembers().stream()
+        Map<String, Long> activities = channel.getMembers().stream()
                 .filter(member -> !member.getUser().isBot())
                 .flatMap(member -> member.getActivities().stream())
                 .filter(activity -> activity.getType() != Activity.ActivityType.CUSTOM_STATUS)
@@ -89,11 +91,11 @@ public class AutoChannel extends ListenerAdapter {
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), Map::putAll);
 
-        int index = this.getActiveAutoChannelsForGuild(vc.getGuild()).collect(Collectors.toList()).indexOf(vc);
+        int index = this.getActiveAutoChannelsForGuild(channel.getGuild()).collect(Collectors.toList()).indexOf(channel);
         var sb = new StringBuilder(String.format("#%d ", index + 1));
         if (activities.isEmpty()) {
             // One activity ex. "Team Fortress 2" or no activity ex. "General"
-            sb.append("[").append(this.getDefaultChannelName(vc.getGuild()).orElse("General")).append("]");
+            sb.append("[").append(this.getDefaultChannelName(channel.getGuild()).orElse("General")).append("]");
         } else {
             // Multiple activities ex. "Team Fortress 2, No Man's Sky, Spotify"
             sb.append(activities.keySet().stream().limit(3).collect(Collectors.joining(", ", "[", "]")));
@@ -126,48 +128,64 @@ public class AutoChannel extends ListenerAdapter {
     }
 
     @Override
-    public void onVoiceChannelUpdateName(@Nonnull VoiceChannelUpdateNameEvent event) {
-        if (activeChannels.containsValue(event.getChannel().getIdLong()) && !event.getNewName().equals(this.createChannelNameFromConnectedMembers(event.getChannel()))) {
-            // someone renamed this channel, don't auto-update it anymore
-            customRenamedChannels.add(event.getChannel().getIdLong());
+    public void onChannelUpdateName(@Nonnull ChannelUpdateNameEvent event) {
+        if (event.isFromType(ChannelType.VOICE)) {
+            if (activeChannels.containsValue(event.getChannel().getIdLong()) && !event.getNewValue().equals(this.createChannelNameFromConnectedMembers((VoiceChannel) event.getChannel()))) {
+                // Someone renamed this channel, don't auto-update it anymore
+                customRenamedChannels.add(event.getChannel().getIdLong());
+            }
         }
     }
 
     @Override
-    public void onVoiceChannelUpdateUserLimit(@Nonnull VoiceChannelUpdateUserLimitEvent event) {
-        if (event.getChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
-            this.getActiveAutoChannelsForGuild(event.getGuild())
-                    .filter(vc -> event.getOldUserLimit() == vc.getUserLimit())
-                    .forEach(vc -> vc.getManager().setUserLimit(event.getNewUserLimit()).reason("Synced property " + event.getPropertyIdentifier() + " with root channel").queue());
+    public void onChannelUpdateUserLimit(@Nonnull ChannelUpdateUserLimitEvent event) {
+        if (event.isFromType(ChannelType.VOICE)) {
+            if (event.getChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
+                this.getActiveAutoChannelsForGuild(event.getGuild())
+                        .map(VoiceChannel.class::cast)
+                        .filter(vc -> event.getOldValue() == vc.getUserLimit())
+                        .forEach(vc -> vc.getManager().setUserLimit(event.getNewValue()).reason("Synced property " + event.getPropertyIdentifier() + " with root channel").queue());
+            }
         }
     }
 
     @Override
-    public void onVoiceChannelUpdateBitrate(@Nonnull VoiceChannelUpdateBitrateEvent event) {
-        if (event.getChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
-            this.getActiveAutoChannelsForGuild(event.getGuild())
-                    .filter(vc -> event.getOldBitrate() == vc.getBitrate())
-                    .forEach(vc -> vc.getManager().setBitrate(event.getNewBitrate()).reason("Synced property " + event.getPropertyIdentifier() + " with root channel").queue());
+    public void onChannelUpdateBitrate(@Nonnull ChannelUpdateBitrateEvent event) {
+        if (event.isFromType(ChannelType.VOICE)) {
+            if (event.getChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
+                this.getActiveAutoChannelsForGuild(event.getGuild())
+                        .filter(vc -> event.getOldValue() == vc.getBitrate())
+                        .forEach(vc -> vc.getManager().setBitrate(event.getNewValue()).reason("Synced property " + event.getPropertyIdentifier() + " with root channel").queue());
+            }
         }
     }
 
     @Override
     public void onPermissionOverrideUpdate(@Nonnull PermissionOverrideUpdateEvent event) {
-        if (event.getChannelType() == ChannelType.VOICE && event.getVoiceChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
-            this.getActiveAutoChannelsForGuild(event.getGuild()).forEach(vc -> {
-                vc.getManager()
-                        .sync(event.getChannel())
-                        .putPermissionOverride(event.getGuild().getMemberById(channelAuthors.get(vc.getIdLong())), CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
-                        .reason("Synced permissions with root channel")
-                        .queue();
-            });
+        if (event.getChannelType() == ChannelType.VOICE) {
+            if (event.getVoiceChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
+                this.getActiveAutoChannelsForGuild(event.getGuild())
+                        .map(VoiceChannel.class::cast)
+                        .forEach(vc -> {
+                            vc.getManager()
+                                    .sync((VoiceChannel) event.getChannel())
+                                    .putPermissionOverride(event.getGuild().getMemberById(channelAuthors.get(vc.getIdLong())), CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
+                                    .reason("Synced permissions with root channel")
+                                    .queue();
+                        });
+            }
         }
     }
 
     @Override
-    public void onVoiceChannelUpdateParent(@Nonnull VoiceChannelUpdateParentEvent event) {
-        if (event.getChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
-            this.getActiveAutoChannelsForGuild(event.getGuild()).forEach(vc -> vc.getManager().setParent(event.getChannel().getParent()).reason("Synced property " + event.getPropertyIdentifier() + " with root channel").queue());
+    public void onChannelUpdateParent(@Nonnull ChannelUpdateParentEvent event) {
+        if (event.isFromType(ChannelType.VOICE)) {
+            VoiceChannel channel = (VoiceChannel) event.getChannel();
+            if (channel.equals(this.getRootAutoChannel(event.getGuild()))) {
+                this.getActiveAutoChannelsForGuild(event.getGuild())
+                        .map(VoiceChannel.class::cast)
+                        .forEach(vc -> vc.getManager().setParent(channel.getParentCategory()).reason("Synced property " + event.getPropertyIdentifier() + " with root channel").queue());
+            }
         }
     }
 
@@ -176,7 +194,7 @@ public class AutoChannel extends ListenerAdapter {
         this.onMemberJoinAutoChannel(event.getChannelJoined(), event.getMember());
     }
 
-    private void onMemberJoinAutoChannel(@Nonnull VoiceChannel channelJoined, @Nonnull Member member) {
+    private void onMemberJoinAutoChannel(@Nonnull AudioChannel channelJoined, @Nonnull Member member) {
         if (channelJoined.equals(this.getRootAutoChannel(channelJoined.getGuild()))) {
             // if member joins the root channel, create new auto channel
             this.createAutoChannel(member);
@@ -203,9 +221,8 @@ public class AutoChannel extends ListenerAdapter {
 
     @Override
     public void onGuildVoiceMove(@Nonnull GuildVoiceMoveEvent event) {
-        VoiceChannel channelLeft = event.getChannelLeft();
-        if (activeChannels.containsValue(channelLeft.getIdLong())) {
-            this.onMemberLeaveAutoChannel(channelLeft, event.getMember());
+        if (activeChannels.containsValue(event.getChannelLeft().getIdLong())) {
+            this.onMemberLeaveAutoChannel((VoiceChannel) event.getChannelLeft(), event.getMember());
         }
 
         this.onMemberJoinAutoChannel(event.getChannelJoined(), event.getMember());
@@ -213,20 +230,18 @@ public class AutoChannel extends ListenerAdapter {
 
     @Override
     public void onGuildVoiceLeave(@Nonnull GuildVoiceLeaveEvent event) {
-        VoiceChannel channelLeft = event.getChannelLeft();
-        if (activeChannels.containsValue(channelLeft.getIdLong())) {
-            this.onMemberLeaveAutoChannel(channelLeft, event.getMember());
+        if (activeChannels.containsValue(event.getChannelLeft().getIdLong())) {
+            this.onMemberLeaveAutoChannel((VoiceChannel) event.getChannelLeft(), event.getMember());
         }
     }
 
     @Override
     public void onGenericUserPresence(@Nonnull GenericUserPresenceEvent event) {
         GuildVoiceState state = event.getMember().getVoiceState();
-        assert state != null;
-        VoiceChannel vc = state.getChannel();
-        if (vc != null && activeChannels.containsValue(vc.getIdLong()) && !customRenamedChannels.contains(vc.getIdLong())) {
+        AudioChannel channel = state.getChannel();
+        if (channel != null && activeChannels.containsValue(channel.getIdLong()) && !customRenamedChannels.contains(channel.getIdLong())) {
             // the rate limit for channel name updates was increased to 2 requests every 10 minutes on 05/02/2020
-            vc.getManager().setName(this.createChannelNameFromConnectedMembers(vc)).timeout(10, TimeUnit.MINUTES).queue();
+            channel.getManager().setName(this.createChannelNameFromConnectedMembers(channel)).timeout(10, TimeUnit.MINUTES).queue();
         }
     }
 

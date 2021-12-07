@@ -1,10 +1,10 @@
 package org.mikusch.listeners;
 
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.events.channel.text.TextChannelDeleteEvent;
+import net.dv8tion.jda.api.events.channel.ChannelDeleteEvent;
 import net.dv8tion.jda.api.events.message.MessageBulkDeleteEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageDeleteEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageDeleteEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.MiscUtil;
 import org.jetbrains.annotations.NotNull;
@@ -26,20 +26,24 @@ public class ThinkerListener extends ListenerAdapter {
     }
 
     @Override
-    public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
-        var message = event.getMessage();
-        if (thinkerService.isValidMessage(message)) {
-            thinkerService.getThinker(event.getGuild()).thenAccept(webhook -> {
-                if (webhook != null) {
-                    thinkerService.saveMessage(message);
-                }
-            });
+    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
+        if (event.isFromGuild()) {
+            var message = event.getMessage();
+            if (thinkerService.isValidMessage(message)) {
+                thinkerService.getThinker(event.getGuild()).thenAccept(webhook -> {
+                    if (webhook != null) {
+                        thinkerService.saveMessage(message);
+                    }
+                });
+            }
         }
     }
 
     @Override
-    public void onGuildMessageDelete(@NotNull GuildMessageDeleteEvent event) {
-        thinkerService.deleteMessage(event.getMessageIdLong());
+    public void onMessageDelete(@NotNull MessageDeleteEvent event) {
+        if (event.isFromGuild()) {
+            thinkerService.deleteMessage(event.getMessageIdLong());
+        }
     }
 
     @Override
@@ -48,7 +52,9 @@ public class ThinkerListener extends ListenerAdapter {
     }
 
     @Override
-    public void onTextChannelDelete(@NotNull TextChannelDeleteEvent event) {
-        thinkerService.deleteAllMessagesFromChannel(event.getChannel());
+    public void onChannelDelete(@NotNull ChannelDeleteEvent event) {
+        if (event.getChannelType().isMessage()) {
+            thinkerService.deleteAllMessagesFromChannel(event.getChannel());
+        }
     }
 }

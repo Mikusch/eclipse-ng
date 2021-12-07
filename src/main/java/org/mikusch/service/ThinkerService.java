@@ -24,7 +24,7 @@ public interface ThinkerService {
 
     boolean isValidMessage(Message message);
 
-    boolean isValidChannel(TextChannel channel);
+    boolean isValidChannel(IPermissionContainer channel);
 
     void saveMessage(Message message);
 
@@ -34,5 +34,5 @@ public interface ThinkerService {
 
     void deleteMessages(Collection<Long> messageIds);
 
-    void deleteAllMessagesFromChannel(MessageChannel channel);
+    void deleteAllMessagesFromChannel(Channel channel);
 }

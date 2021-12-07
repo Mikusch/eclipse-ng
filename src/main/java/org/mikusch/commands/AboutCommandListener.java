@@ -32,7 +32,7 @@ public class AboutCommandListener extends ListenerAdapter {
         if (!event.getName().equals("about")) return;
 
         event.deferReply().queue(hook -> event.getJDA().retrieveApplicationInfo().queue(info -> {
-            String inviteUrl = event.getJDA().getInviteUrl(Permission.MESSAGE_ADD_REACTION, Permission.VIEW_CHANNEL, Permission.MESSAGE_READ, Permission.MESSAGE_WRITE, Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_HISTORY, Permission.MESSAGE_EXT_EMOJI, Permission.NICKNAME_CHANGE);
+            String inviteUrl = event.getJDA().getInviteUrl(Permission.MESSAGE_ADD_REACTION, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_HISTORY, Permission.MESSAGE_EXT_EMOJI, Permission.NICKNAME_CHANGE);
             MessageEmbed embed = new EmbedBuilder()
                     .setThumbnail(info.getIconUrl())
                     .setTitle(info.getName(), info.isBotPublic() ? inviteUrl : null)
