@@ -36,7 +36,6 @@ public class EvalCommandListener extends ListenerAdapter {
                         if (guild != null) {
                             //Only Mikusch may access this
                             command.updatePrivileges(guild, PRIVILEGE).queue();
-                            command.updatePrivileges(guild, PRIVILEGE).queue();
                         }
                     });
                 });

@@ -1,8 +1,8 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.springframework.boot' version '2.6.1'
-    id 'com.github.ben-manes.versions' version '0.39.0'
+    id 'org.springframework.boot' version '2.6.2'
+    id 'com.github.ben-manes.versions' version '0.40.0'
 }
 
 group 'org.mikusch'
@@ -17,11 +17,11 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-alpha.2'
-    implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.7.3'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-parent', version: '2.6.1'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.6.1'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.6.1'
+    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-alpha.3'
+    implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.7.5'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-parent', version: '2.6.2'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.6.2'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.6.2'
     implementation group: 'org.codehaus.groovy', name: 'groovy-all', version: '3.0.9', ext: 'pom'
     implementation group: 'org.codehaus.groovy', name: 'groovy', version: '3.0.9'
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
