@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'org.springframework.boot' version '2.6.2'
-    id 'com.github.ben-manes.versions' version '0.40.0'
+    id 'com.github.ben-manes.versions' version '0.41.0'
 }
 
 group 'org.mikusch'
@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-alpha.3'
+    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-alpha.4'
     implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.7.5'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-parent', version: '2.6.2'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.6.2'

@@ -134,7 +134,7 @@ public class DefaultThinkerService implements ThinkerService {
 
     @Override
     public boolean isValidMessage(Message message) {
-        return isValidChannel(message.getTextChannel()) && !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
+        return message.isFromType(ChannelType.TEXT) && isValidChannel(message.getTextChannel()) && !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
     }
 
     @Override
