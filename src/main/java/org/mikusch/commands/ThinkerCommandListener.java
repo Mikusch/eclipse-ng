@@ -2,10 +2,10 @@ package org.mikusch.commands;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +26,7 @@ public class ThinkerCommandListener extends ListenerAdapter {
         this.thinkerService = thinkerService;
         jda.addEventListener(this);
         jda.upsertCommand(
-                new CommandData("thinker", "The Thinker").addSubcommands(
+                Commands.slash("thinker", "The Thinker").addSubcommands(
                         new SubcommandData("force", "Forces the Thinker to think"),
                         new SubcommandData("scan", "Scans all messages in a channel and stores them in the database")
                                 .addOption(OptionType.CHANNEL, "channel", "The channel to scan in")
@@ -35,7 +35,7 @@ public class ThinkerCommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getName().equals("thinker")) return;
 
         var member = Objects.requireNonNull(event.getMember());

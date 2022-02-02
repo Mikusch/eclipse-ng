@@ -7,9 +7,9 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.IMentionable;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.TeamMember;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +24,11 @@ public class AboutCommandListener extends ListenerAdapter {
     @Autowired
     public AboutCommandListener(JDA jda) {
         jda.addEventListener(this);
-        jda.upsertCommand(new CommandData("about", "Tells you more about the bot")).queue();
+        jda.upsertCommand(Commands.slash("about", "Tells you more about the bot")).queue();
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getName().equals("about")) return;
 
         event.deferReply().queue(hook -> event.getJDA().retrieveApplicationInfo().queue(info -> {

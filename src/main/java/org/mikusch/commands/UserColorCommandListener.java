@@ -5,14 +5,14 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.role.RoleDeleteEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateNameEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,10 +36,13 @@ public class UserColorCommandListener extends ListenerAdapter {
         this.jdbcTemplate = jdbcTemplate;
 
         jda.addEventListener(this);
-        //Only add this command for Banana Land
+        // Only add this command for Banana Land
         var guild = jda.getGuildById(186809082470989824L);
         if (guild != null) {
-            guild.upsertCommand(new CommandData("usercolor", "Updates your colored role").addOption(OptionType.STRING, "color", "The color")).queue();
+            guild.upsertCommand(
+                    Commands.slash("usercolor", "Updates your colored role")
+                            .addOption(OptionType.STRING, "color", "The color")
+            ).queue();
         }
     }
 
@@ -48,7 +51,7 @@ public class UserColorCommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getName().equals("usercolor")) return;
 
         event.deferReply().queue(hook -> {

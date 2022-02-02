@@ -4,11 +4,11 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class AvatarCommandListener extends ListenerAdapter {
     @Autowired
     public AvatarCommandListener(JDA jda) {
         jda.addEventListener(this);
-        jda.upsertCommand(new CommandData("avatar", "Displays the avatar of yourself or a user")
+        jda.upsertCommand(Commands.slash("avatar", "Displays the avatar of yourself or a user")
                 .addOption(OptionType.USER, "user", "The user to display the avatar for")
         ).queue();
     }
@@ -44,7 +44,7 @@ public class AvatarCommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getName().equals("avatar")) return;
 
         OptionMapping option = event.getOption("user");

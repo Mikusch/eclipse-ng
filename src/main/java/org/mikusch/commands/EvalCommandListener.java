@@ -4,11 +4,11 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -27,14 +27,14 @@ public class EvalCommandListener extends ListenerAdapter {
     @Autowired
     public EvalCommandListener(JDA jda) {
         jda.addEventListener(this);
-        jda.upsertCommand(new CommandData("eval", "Evaluates code")
+        jda.upsertCommand(Commands.slash("eval", "Evaluates code")
                         .setDefaultEnabled(false)
                         .addOption(OptionType.STRING, "code", "The code to evaluate", true))
                 .queue(command -> {
                     ENABLED_GUILDS.forEach(id -> {
                         Guild guild = jda.getGuildById(id);
                         if (guild != null) {
-                            //Only Mikusch may access this
+                            // Only Mikusch may access this
                             command.updatePrivileges(guild, PRIVILEGE).queue();
                         }
                     });
@@ -42,7 +42,7 @@ public class EvalCommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getName().equals("eval")) return;
 
         event.deferReply().queue(hook -> {
@@ -59,7 +59,7 @@ public class EvalCommandListener extends ListenerAdapter {
             } catch (Exception e) {
                 result = e.toString();
             } finally {
-                //Max. 2000 characters with room for markdown
+                // Max. 2000 characters with room for markdown
                 hook.editOriginal(MarkdownUtil.codeblock(StringUtils.abbreviate(String.valueOf(result), 1990))).queue();
             }
         });

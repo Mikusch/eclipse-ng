@@ -1,9 +1,9 @@
 package org.mikusch.commands;
 
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.mikusch.service.TwitterService;
@@ -26,13 +26,14 @@ public class BabysNamesCommandListener extends ListenerAdapter {
     private static final long BABYSNAMES_ACCOUNT_ID = 1592227514;
 
     private final List<String> names = Collections.synchronizedList(new ArrayList<>());
+    private final Random rand = new Random();
 
     @Autowired
     public BabysNamesCommandListener(JDA jda, TwitterService twitterService) {
         jda.addEventListener(this);
-        jda.upsertCommand(new CommandData("babyname", "Gives you a good old baby name!")).queue();
+        jda.upsertCommand(Commands.slash("babyname", "Gives you a good old baby name!")).queue();
 
-        //Periodically fetch all baby names from the @Babysnames twitter
+        // Periodically fetch all baby names from the @Babysnames twitter
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
                 twitterService.getAllStatusesForUser(BABYSNAMES_ACCOUNT_ID).stream()
@@ -51,7 +52,7 @@ public class BabysNamesCommandListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         if (!event.getName().equals("babyname")) return;
 
         var guild = Objects.requireNonNull(event.getGuild());
@@ -59,7 +60,7 @@ public class BabysNamesCommandListener extends ListenerAdapter {
 
         event.deferReply().queue(hook -> {
             if (!names.isEmpty()) {
-                String name = names.get(new Random().nextInt(names.size()));
+                String name = names.get(rand.nextInt(names.size()));
                 if (PermissionUtil.canInteract(guild.getSelfMember(), member)) {
                     member.modifyNickname(name).queue(modified -> event.getHook().editOriginal(MessageFormat.format("Your new nickname is **{0}**.", name)).queue());
                 } else {
