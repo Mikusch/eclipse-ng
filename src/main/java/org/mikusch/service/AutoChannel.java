@@ -267,8 +267,8 @@ public class AutoChannel extends ListenerAdapter {
                     }
                     // add new owner's permissions
                     vc.upsertPermissionOverride(newOwner)
-                            .setAllow(CHANNEL_AUTHOR_PERMISSIONS_ALLOW)
-                            .setDeny(CHANNEL_AUTHOR_PERMISSIONS_DENY)
+                            .setAllowed(CHANNEL_AUTHOR_PERMISSIONS_ALLOW)
+                            .setDenied(CHANNEL_AUTHOR_PERMISSIONS_DENY)
                             .reason("Channel owner " + member.getUser().getAsTag() + " has left their channel, designating " + newOwner.getUser().getAsTag() + " as the new owner")
                             .queue(changed -> channelAuthors.replace(vc.getIdLong(), newOwner.getIdLong()), e -> channelAuthors.remove(vc.getIdLong()));
                 });
