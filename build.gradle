@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.springframework.boot' version '2.6.7'
+    id 'org.springframework.boot' version '2.7.1'
     id 'com.github.ben-manes.versions' version '0.42.0'
 }
 
@@ -17,12 +17,12 @@ repositories {
 }
 
 dependencies {
-    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-alpha.11'
+    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-alpha.13'
     implementation group: 'club.minnced', name: 'discord-webhooks', version: '0.8.0'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-parent', version: '2.6.7'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.6.7'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.6.7'
-    implementation group: 'org.codehaus.groovy', name: 'groovy', version: '3.0.10'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-parent', version: '2.7.1'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter', version: '2.7.1'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc', version: '2.7.1'
+    implementation group: 'org.codehaus.groovy', name: 'groovy', version: '3.0.11'
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
     implementation group: 'org.twitter4j', name: 'twitter4j-core', version: '4.0.7'
     implementation group: 'com.google.guava', name: 'guava', version: '31.1-jre'
