@@ -11,6 +11,8 @@ import net.dv8tion.jda.api.utils.MarkdownUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.mikusch.service.ThinkerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,8 @@ import java.util.Objects;
 
 @Component
 public class ThinkerCommandListener extends ListenerAdapter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ThinkerCommandListener.class);
 
     private final ThinkerService thinkerService;
 
@@ -49,6 +53,11 @@ public class ThinkerCommandListener extends ListenerAdapter {
                         } else {
                             hook.editOriginal("The Thinker has spoken in " + event.getGuild().getTextChannelById(readonlyMessage.getChannelId()).getAsMention() + ".").queue();
                         }
+                    }).exceptionally(e -> {
+                        LOG.error("Failed to trigger Thinker", e);
+
+                        hook.editOriginal("The Thinker is currently asleep (an internal error has occurred).").queue();
+                        return null;
                     });
                 } else if (StringUtils.equals(event.getSubcommandName(), "scan")) {
                     var channelOption = event.getOption("channel");
