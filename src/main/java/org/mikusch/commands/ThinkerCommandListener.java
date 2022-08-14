@@ -62,17 +62,17 @@ public class ThinkerCommandListener extends ListenerAdapter {
                 } else if (StringUtils.equals(event.getSubcommandName(), "scan")) {
                     var channelOption = event.getOption("channel");
                     if (channelOption != null) {
-                        var messageChannel = channelOption.getAsMessageChannel();
-                        if (messageChannel != null) {
-                            hook.editOriginal("Scanning " + channelOption.getAsGuildChannel().getAsMention() + " for messages...").queue(message -> {
-                                thinkerService.saveAllMessagesInChannel(messageChannel);
+                        var channel = channelOption.getAsChannel();
+                        if (channel.getType().isMessage()) {
+                            hook.editOriginal("Scanning " + channelOption.getAsChannel().getAsMention() + " for messages...").queue(message -> {
+                                thinkerService.saveAllMessagesInChannel(channel.asTextChannel());
                             });
                         } else {
-                            hook.editOriginal(channelOption.getAsGuildChannel().getAsMention() + " is not a message channel!").queue();
+                            hook.editOriginal(channelOption.getAsChannel().getAsMention() + " is not a message channel!").queue();
                         }
                     } else {
                         hook.editOriginal("Scanning this channel for messages...").queue(message -> {
-                            thinkerService.saveAllMessagesInChannel(event.getTextChannel());
+                            thinkerService.saveAllMessagesInChannel(event.getChannel().asTextChannel());
                         });
                     }
                 }

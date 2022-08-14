@@ -91,7 +91,7 @@ public class AutoChannel extends ListenerAdapter {
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), Map::putAll);
 
-        int index = this.getActiveAutoChannelsForGuild(channel.getGuild()).collect(Collectors.toList()).indexOf(channel);
+        int index = this.getActiveAutoChannelsForGuild(channel.getGuild()).toList().indexOf(channel);
         var sb = new StringBuilder(String.format("#%d ", index + 1));
         if (activities.isEmpty()) {
             // One activity ex. "Team Fortress 2" or no activity ex. "General"
@@ -162,14 +162,14 @@ public class AutoChannel extends ListenerAdapter {
 
     @Override
     public void onPermissionOverrideUpdate(@Nonnull PermissionOverrideUpdateEvent event) {
-        if (event.getChannelType() == ChannelType.VOICE) {
-            if (event.getVoiceChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
+        if (event.getChannelType().isAudio()) {
+            if (event.getChannel().asVoiceChannel().equals(this.getRootAutoChannel(event.getGuild()))) {
                 this.getActiveAutoChannelsForGuild(event.getGuild())
                         .map(VoiceChannel.class::cast)
-                        .forEach(vc -> {
-                            vc.getManager()
-                                    .sync((VoiceChannel) event.getChannel())
-                                    .putPermissionOverride(event.getGuild().getMemberById(channelAuthors.get(vc.getIdLong())), CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
+                        .forEach(channel -> {
+                            channel.getManager()
+                                    .sync(event.getChannel())
+                                    .putPermissionOverride(event.getGuild().getMemberById(channelAuthors.get(channel.getIdLong())), CHANNEL_AUTHOR_PERMISSIONS_ALLOW, CHANNEL_AUTHOR_PERMISSIONS_DENY)
                                     .reason("Synced permissions with root channel")
                                     .queue();
                         });

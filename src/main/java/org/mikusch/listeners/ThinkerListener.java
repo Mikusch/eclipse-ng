@@ -12,8 +12,6 @@ import org.mikusch.service.ThinkerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
-
 @Component
 public class ThinkerListener extends ListenerAdapter {
 
@@ -48,7 +46,7 @@ public class ThinkerListener extends ListenerAdapter {
 
     @Override
     public void onMessageBulkDelete(@NotNull MessageBulkDeleteEvent event) {
-        thinkerService.deleteMessages(event.getMessageIds().stream().map(MiscUtil::parseSnowflake).collect(Collectors.toList()));
+        thinkerService.deleteMessages(event.getMessageIds().stream().map(MiscUtil::parseSnowflake).toList());
     }
 
     @Override

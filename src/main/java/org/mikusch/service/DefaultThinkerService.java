@@ -5,6 +5,7 @@ import club.minnced.discord.webhook.receive.ReadonlyMessage;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.entities.channel.unions.IWebhookContainerUnion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 @Service
 public class DefaultThinkerService implements ThinkerService {
@@ -85,13 +85,14 @@ public class DefaultThinkerService implements ThinkerService {
         if (immediate) {
             return triggerThinkerImmediate(guild, webhook);
         } else {
-            var channel = webhook.getChannel();
-            var lastPostedTime = lastPostedTimes.computeIfAbsent(webhook.getIdLong(), webhookId -> OffsetDateTime.now());
+            IWebhookContainerUnion channel = webhook.getChannel();
+            OffsetDateTime lastPostedTime = lastPostedTimes.computeIfAbsent(webhook.getIdLong(), webhookId -> OffsetDateTime.now());
 
-            return channel.getHistory()
+            return channel.asTextChannel()
+                    .getHistory()
                     .retrievePast(100)
                     .submit()
-                    .thenApply(messages -> messages.stream().filter(this::isValidMessage).map(ISnowflake::getTimeCreated).collect(Collectors.toList()))
+                    .thenApply(messages -> messages.stream().filter(this::isValidMessage).map(ISnowflake::getTimeCreated).toList())
                     .thenApply(timestamps -> {
                         //Calculate the average interval between messages sent in the current channel
                         double avgMillis = timestamps.stream().mapToLong(timestamp -> Duration.between(timestamp, lastPostedTime).toMillis()).average().orElse(0);
@@ -109,18 +110,19 @@ public class DefaultThinkerService implements ThinkerService {
     }
 
     private CompletableFuture<ReadonlyMessage> triggerThinkerImmediate(Guild guild, Webhook webhook) {
-        var client = WebhookClientBuilder.fromJDA(webhook).buildJDA();
-        return retrieveRandomMessage(guild).thenCompose(message -> client.send(message).whenComplete((readonlyMessage, throwable) -> {
-            //If there was no error, remember the time we sent the message
-            if (throwable == null) {
-                lastPostedTimes.put(webhook.getIdLong(), OffsetDateTime.now());
-            } else {
-                LOGGER.error("Exception encountered while sending Thinker message", throwable);
-            }
+        try (var client = WebhookClientBuilder.fromJDA(webhook).buildJDA()) {
+            return retrieveRandomMessage(guild).thenCompose(message -> client.send(message).whenComplete((readonlyMessage, throwable) -> {
+                //If there was no error, remember the time we sent the message
+                if (throwable == null) {
+                    lastPostedTimes.put(webhook.getIdLong(), OffsetDateTime.now());
+                } else {
+                    LOGGER.error("Exception encountered while sending Thinker message", throwable);
+                }
 
-            //And finally, close the client
-            client.close();
-        }));
+                //And finally, close the client
+                client.close();
+            }));
+        }
     }
 
     @Override
@@ -134,12 +136,12 @@ public class DefaultThinkerService implements ThinkerService {
 
     @Override
     public boolean isValidMessage(Message message) {
-        return message.isFromType(ChannelType.TEXT) && isValidChannel(message.getTextChannel()) && !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
+        return message.isFromGuild() && isValidChannel(message.getChannel().asGuildMessageChannel()) && !message.getAuthor().isBot() && !message.isWebhookMessage() && (message.getType() == MessageType.DEFAULT || message.getType() == MessageType.INLINE_REPLY);
     }
 
     @Override
-    public boolean isValidChannel(IPermissionContainer channel) {
-        var override = channel.getPermissionOverride(channel.getGuild().getPublicRole());
+    public boolean isValidChannel(GuildMessageChannel channel) {
+        var override = channel.getPermissionContainer().getPermissionOverride(channel.getGuild().getPublicRole());
         return override == null || !override.getDenied().contains(Permission.VIEW_CHANNEL);
     }
 

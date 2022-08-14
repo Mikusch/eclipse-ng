@@ -24,7 +24,7 @@ public interface ThinkerService {
 
     boolean isValidMessage(Message message);
 
-    boolean isValidChannel(IPermissionContainer channel);
+    boolean isValidChannel(GuildMessageChannel channel);
 
     void saveMessage(Message message);
 
